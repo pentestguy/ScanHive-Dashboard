@@ -1,0 +1,18 @@
+export const ROLE_PERMISSIONS = [
+  "iam.users.manage",
+  "iam.roles.manage",
+  "iam.groups.manage",
+  "projects.read",
+  "projects.manage",
+  "projects.manage_assigned",
+  "scans.read",
+  "scans.upload",
+  "scans.manage",
+  "findings.read",
+  "findings.triage",
+  "findings.manage",
+  "security.reports.read",
+  "security.reports.manage",
+  "audit.read",
+  "settings.manage",
+];
