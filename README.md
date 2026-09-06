@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./scanhive-logo.svg" alt="ScanHive" width="176" />
 
-  <h1>ScanHive Community</h1>
+  <h1>ScanHive Dashboard</h1>
 
   <p><strong>Unified application security posture management for modern DevSecOps teams.</strong></p>
   <p>Consolidate SARIF results, remove duplicate noise, triage vulnerabilities, and manage security access across projects and organizations.</p>
