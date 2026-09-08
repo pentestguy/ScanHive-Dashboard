@@ -38,6 +38,13 @@ class ProjectFindingItem(BaseModel):
     message: str
     file_path: str
     line_number: int | None
+    end_line: int | None
+    start_column: int | None
+    end_column: int | None
+    snippet: str | None
+    cwe: str | None
+    owasp: str | None
+    help_uri: str | None
     fingerprint: str | None
     result_status: ResultStatus
     uploaded_at: datetime

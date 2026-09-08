@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from sqlalchemy import text as sql_text
 
 from app.db.base import Base
 from app.db.session import engine
@@ -17,6 +18,40 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 Base.metadata.create_all(bind=engine)
+
+# create_all only creates missing tables, it never alters existing ones --
+# there's no migration framework in this project, so newly added nullable
+# columns are added by hand here, guarded to be safe to run on every startup.
+with engine.begin() as connection:
+    for column, ddl_type in [
+        ("end_line", "INTEGER"),
+        ("start_column", "INTEGER"),
+        ("end_column", "INTEGER"),
+        ("snippet", "TEXT"),
+        ("cwe", "VARCHAR(255)"),
+        ("owasp", "VARCHAR(255)"),
+        ("help_uri", "VARCHAR(1000)"),
+    ]:
+        connection.execute(sql_text(
+            f"ALTER TABLE findings ADD COLUMN IF NOT EXISTS {column} {ddl_type}"
+        ))
+
+# Same as above: enforce case-insensitive unique API key names per user at
+# the DB level as a backstop (the API already rejects duplicates itself).
+# Wrapped separately and tolerantly -- if an existing install already has
+# duplicate names, this index creation fails and is skipped rather than
+# blocking startup; it'll succeed once those duplicates are renamed.
+try:
+    with engine.begin() as connection:
+        connection.execute(sql_text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS api_keys_user_id_name_lower_key "
+            "ON api_keys (user_id, lower(name))"
+        ))
+except Exception as exc:
+    print(
+        "Warning: could not create unique index on api_keys(user_id, lower(name)) "
+        f"-- likely pre-existing duplicate names: {exc}"
+    )
 
 app = FastAPI(
     title="ScanHive",

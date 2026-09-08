@@ -37,6 +37,7 @@ import { ApiKeysSection } from "./ApiKeysPage";
 import type { IamGroup, IamRole, IamUser, Invitation } from "../types/iam";
 import { getApiErrorMessage } from "../utils/apiError";
 import { formatLocalDateTime } from "../utils/date";
+import { copyToClipboard } from "../utils/clipboard";
 
 type IamSection = "organization" | "users" | "roles" | "groups" | "api-keys";
 
@@ -379,7 +380,14 @@ export function IamSettingsPage() {
                               type="button"
                               className="secondary-button"
                               onClick={async () => {
-                                await navigator.clipboard.writeText(`${window.location.origin}/accept-invite/${invitation.token}`);
+                                const succeeded = await copyToClipboard(
+                                  `${window.location.origin}/accept-invite/${invitation.token}`,
+                                );
+                                if (succeeded) {
+                                  message.success("Invite link copied.");
+                                } else {
+                                  message.error("Unable to copy automatically. Please copy the link manually.");
+                                }
                               }}
                             >
                               Copy link

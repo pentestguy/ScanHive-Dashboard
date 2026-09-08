@@ -5,7 +5,7 @@ from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.api_key import ApiKeyCreate, ApiKeyCreatedResponse, ApiKeyResponse
-from app.services.api_key_service import ApiKeyService
+from app.services.api_key_service import ApiKeyService, DuplicateApiKeyNameError
 
 router = APIRouter(prefix="/api/v1/api-keys", tags=["API Keys"])
 
@@ -24,7 +24,10 @@ def create_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    api_key, plaintext = ApiKeyService(db).create(current_user.id, request.name)
+    try:
+        api_key, plaintext = ApiKeyService(db).create(current_user.id, request.name)
+    except DuplicateApiKeyNameError as exc:
+        raise HTTPException(409, str(exc)) from exc
     return {
         "id": api_key.id,
         "name": api_key.name,

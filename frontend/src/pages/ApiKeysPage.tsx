@@ -6,6 +6,8 @@ import { useState } from "react";
 import { createApiKey, deleteApiKey, getApiKeys, regenerateApiKey } from "../api/apiKeysApi";
 import type { ApiKey, CreatedApiKey } from "../types/apiKey";
 import { formatLocalDateTime } from "../utils/date";
+import { getApiErrorMessage } from "../utils/apiError";
+import { copyToClipboard } from "../utils/clipboard";
 
 export function ApiKeysSection() {
   const queryClient = useQueryClient();
@@ -47,9 +49,13 @@ export function ApiKeysSection() {
 
   async function copyKey() {
     if (!createdKey) return;
-    await navigator.clipboard.writeText(createdKey.key);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    const succeeded = await copyToClipboard(createdKey.key);
+    if (succeeded) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } else {
+      message.error("Unable to copy automatically. Please select and copy the key manually.");
+    }
   }
 
   return (
@@ -125,7 +131,11 @@ export function ApiKeysSection() {
                 <input autoFocus className="form-input" value={name} maxLength={100} placeholder="Production CI" onChange={(event) => setName(event.target.value)} />
                 <small>Use a name that identifies the pipeline or integration.</small>
               </label>
-              {createMutation.isError && <div className="alert-error">Unable to create API key.</div>}
+              {createMutation.isError && (
+                <div className="alert-error">
+                  {getApiErrorMessage(createMutation.error, "Unable to create API key.")}
+                </div>
+              )}
               <div className="modal-actions">
                 <button type="button" className="secondary-button" onClick={() => { setCreateOpen(false); setName(""); }}>Cancel</button>
                 <button type="submit" className="primary-button small" disabled={!name.trim() || createMutation.isPending}>{createMutation.isPending ? "Creating..." : "Create key"}</button>

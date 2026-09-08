@@ -245,6 +245,18 @@ a {
   border-radius: 9px;
 }
 
+html[data-theme="light"] .alert-error {
+  color: #b91c1c;
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+html[data-theme="light"] .alert-success {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
 .iam-page {
   width: 100%;
   max-width: 1180px;
@@ -716,7 +728,7 @@ html[data-theme="light"] .api-key-table-row code { color: #1d4ed8; }
 
 .api-key-created-heading .icon-button {
   flex: none;
-  color: #86efac;
+  color: var(--ui-text-muted);
 }
 
 .api-key-upload-reference {
@@ -2534,6 +2546,30 @@ html[data-theme="light"] .result-status.recurrent { color: #92400e; background: 
   white-space: pre-wrap;
 }
 
+.finding-code-snippet {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: #0b0b0d;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.finding-rule-link {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.finding-rule-link:hover {
+  text-decoration: underline;
+}
+
+
 @media (max-width: 720px) {
   .finding-detail-actions {
     justify-content: flex-start;
@@ -3090,6 +3126,13 @@ html[data-theme="light"] .finding-full-message,
 html[data-theme="light"] .triage-summary p {
   color: #526174;
 }
+
+html[data-theme="light"] .finding-code-snippet {
+  background: #f4f6fa;
+  border-color: #dce2ea;
+  color: #232326;
+}
+
 
 html[data-theme="light"] .triage-form-hint,
 html[data-theme="light"] .triage-history-meta {

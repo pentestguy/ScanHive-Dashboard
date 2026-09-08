@@ -5,6 +5,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -63,6 +64,41 @@ class Finding(Base):
 
     line_number: Mapped[int] = mapped_column(
         Integer,
+        nullable=True
+    )
+
+    end_line: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    start_column: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    end_column: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    snippet: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    cwe: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    owasp: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    help_uri: Mapped[str | None] = mapped_column(
+        String(1000),
         nullable=True
     )
 

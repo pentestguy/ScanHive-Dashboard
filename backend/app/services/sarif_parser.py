@@ -33,6 +33,61 @@ def severity_value(result: dict, rule: dict) -> str:
     return result.get("level") or rule.get("defaultConfiguration", {}).get("level") or "warning"
 
 
+def classification_tags(result: dict, rule: dict) -> tuple[str | None, str | None]:
+    rule_properties = rule.get("properties", {}) or {}
+    result_properties = result.get("properties", {}) or {}
+
+    def as_list(value) -> list[str]:
+        if not value:
+            return []
+        return [value] if isinstance(value, str) else list(value)
+
+    cwe_values = as_list(rule_properties.get("cwe")) or as_list(result_properties.get("cwe"))
+    owasp_values = as_list(rule_properties.get("owasp")) or as_list(result_properties.get("owasp"))
+
+    if not cwe_values or not owasp_values:
+        tags = as_list(rule_properties.get("tags")) + as_list(result_properties.get("tags"))
+        for tag in tags:
+            normalized = str(tag).strip()
+            if not cwe_values and normalized.upper().startswith("CWE"):
+                cwe_values.append(normalized)
+            elif not owasp_values and normalized.upper().startswith("OWASP"):
+                owasp_values.append(normalized)
+
+    def dedupe_join(values: list[str]) -> str | None:
+        seen = list(dict.fromkeys(str(value).strip() for value in values if str(value).strip()))
+        return ", ".join(seen) if seen else None
+
+    return dedupe_join(cwe_values), dedupe_join(owasp_values)
+
+
+def extract_fingerprint(result: dict) -> str | None:
+    """Pick a stable fingerprint for cross-scan dedup.
+
+    Fingerprint objects can carry several algorithms side by side (e.g. Snyk's
+    `identity` vs its code-context-based `0`/`1` hashes), and dict key order in
+    the source JSON isn't guaranteed to be consistent between scans of the same
+    code -- picking "whichever value comes first" silently breaks dedup. Prefer
+    each tool's known-stable key explicitly; only fall back to positional pick
+    for tools/keys we don't recognize.
+    """
+    partial = result.get("partialFingerprints") or {}
+    if partial:
+        for key in ("matchBasedId/v1",):
+            if key in partial:
+                return str(partial[key])
+        return str(next(iter(partial.values())))
+
+    fingerprints = result.get("fingerprints") or {}
+    if fingerprints:
+        for key in ("snyk/asset/finding/v1", "identity"):
+            if key in fingerprints:
+                return str(fingerprints[key])
+        return str(next(iter(fingerprints.values())))
+
+    return None
+
+
 def result_identity(
     rule_id: str,
     fingerprint: str | None,
@@ -107,24 +162,33 @@ class SarifParser:
 
                 file_path = ""
                 line_number = None
+                end_line = None
+                start_column = None
+                end_column = None
+                snippet = None
 
                 try:
                     location = result["locations"][0]["physicalLocation"]
 
                     file_path = unquote(location["artifactLocation"].get("uri", ""))
 
-                    line_number = location["region"].get("startLine")
+                    region = location["region"]
+                    line_number = region.get("startLine")
+                    end_line = region.get("endLine")
+                    start_column = region.get("startColumn")
+                    end_column = region.get("endColumn")
+                    snippet = (region.get("snippet") or {}).get("text") or None
 
                 except Exception:
                     pass
 
-                fingerprint = None
+                cwe, owasp = classification_tags(result, rule)
+                help_uri = rule.get("helpUri")
 
                 try:
-                    values = list((result.get("partialFingerprints") or result.get("fingerprints") or {}).values())
-                    fingerprint = str(values[0]) if values else None
+                    fingerprint = extract_fingerprint(result)
                 except Exception:
-                    pass
+                    fingerprint = None
 
                 findings.append(
                     Finding(
@@ -135,6 +199,13 @@ class SarifParser:
                         message=message,
                         file_path=file_path,
                         line_number=line_number,
+                        end_line=end_line,
+                        start_column=start_column,
+                        end_column=end_column,
+                        snippet=snippet,
+                        cwe=cwe,
+                        owasp=owasp,
+                        help_uri=help_uri,
                         fingerprint=fingerprint,
                         dedup_key=result_identity(
                             rule_id,

@@ -4,7 +4,13 @@ import secrets
 
 from sqlalchemy.orm import Session
 
+from sqlalchemy import func
+
 from app.models.api_key import ApiKey
+
+
+class DuplicateApiKeyNameError(Exception):
+    pass
 
 
 class ApiKeyService:
@@ -16,10 +22,23 @@ class ApiKeyService:
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
     def create(self, user_id: int, name: str) -> tuple[ApiKey, str]:
+        name = name.strip()
+
+        existing = (
+            self.db.query(ApiKey)
+            .filter(
+                ApiKey.user_id == user_id,
+                func.lower(ApiKey.name) == name.lower(),
+            )
+            .first()
+        )
+        if existing is not None:
+            raise DuplicateApiKeyNameError("An API key with this name already exists")
+
         prefix = secrets.token_hex(4)
         plaintext = f"osk_{prefix}.{secrets.token_urlsafe(32)}"
         api_key = ApiKey(
-            name=name.strip(),
+            name=name,
             prefix=prefix,
             key_hash=self.hash_key(plaintext),
             user_id=user_id,

@@ -23,6 +23,13 @@ export interface Finding {
   message: string;
   file_path: string;
   line_number: number | null;
+  end_line: number | null;
+  start_column: number | null;
+  end_column: number | null;
+  snippet: string | null;
+  cwe: string | null;
+  owasp: string | null;
+  help_uri: string | null;
   fingerprint: string | null;
   result_status: "New" | "Recurrent";
   uploaded_at: string;

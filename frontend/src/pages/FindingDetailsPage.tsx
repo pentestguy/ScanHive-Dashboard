@@ -131,12 +131,50 @@ export function FindingDetailsPage() {
               <dl>
                 <div><dt>Scanner</dt><dd>{finding.tool}</dd></div>
                 <div><dt>File</dt><dd>{finding.file_path || "—"}</dd></div>
-                <div><dt>Line</dt><dd>{finding.line_number ?? "—"}</dd></div>
+                <div>
+                  <dt>Line</dt>
+                  <dd>
+                    {finding.line_number == null
+                      ? "—"
+                      : finding.end_line && finding.end_line !== finding.line_number
+                        ? `${finding.line_number}–${finding.end_line}`
+                        : finding.line_number}
+                  </dd>
+                </div>
+                {(finding.cwe || finding.owasp) && (
+                  <div>
+                    <dt>Classification</dt>
+                    <dd>
+                      {[finding.cwe, finding.owasp].filter(Boolean).join(" · ")}
+                    </dd>
+                  </div>
+                )}
+                {finding.help_uri && (
+                  <div>
+                    <dt>Rule docs</dt>
+                    <dd>
+                      <a
+                        className="finding-rule-link"
+                        href={finding.help_uri}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View rule documentation
+                      </a>
+                    </dd>
+                  </div>
+                )}
                 <div><dt>Fingerprint</dt><dd>{finding.fingerprint || "—"}</dd></div>
                 <div><dt>Status</dt><dd><span className={`result-status ${finding.result_status.toLowerCase()}`}>{finding.result_status}</span></dd></div>
               </dl>
-              <h3>Message</h3>
+              <h3>Description</h3>
               <p className="finding-full-message">{finding.message || "—"}</p>
+              {finding.snippet && (
+                <>
+                  <h3>Code</h3>
+                  <pre className="finding-code-snippet"><code>{finding.snippet}</code></pre>
+                </>
+              )}
             </section>
 
             <section className="finding-detail-panel triage-panel">

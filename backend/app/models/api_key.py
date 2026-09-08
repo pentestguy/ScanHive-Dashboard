@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -10,6 +10,14 @@ from app.db.base import Base
 
 class ApiKey(Base):
     __tablename__ = "api_keys"
+    __table_args__ = (
+        Index(
+            "api_keys_user_id_name_lower_key",
+            "user_id",
+            text("lower(name)"),
+            unique=True,
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
