@@ -7,7 +7,10 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_API_BASE_URL=http://localhost:8000
+# Optional. Leave unset so the app auto-detects the API host at runtime
+# (same host the page was loaded from, port 8000). Only pass this if the
+# API lives on a different host/port than the frontend.
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build

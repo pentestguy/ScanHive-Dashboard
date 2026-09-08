@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # Comma-separated list of extra origins allowed to call the API (e.g. a
+    # public domain or IP the dashboard is served from). localhost, 127.0.0.1
+    # and private LAN ranges are already allowed and don't need to be listed.
+    EXTRA_CORS_ORIGINS: str = ""
+
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""

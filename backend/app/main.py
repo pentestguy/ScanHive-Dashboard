@@ -11,6 +11,7 @@ from app.api.v1.findings import router as finding_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.iam import router as iam_router
 from app.api.v1.api_keys import router as api_key_router
+from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -22,11 +23,18 @@ app = FastAPI(
     version="0.1.0"
 )
 
+extra_cors_origins = [
+    origin.strip()
+    for origin in settings.EXTRA_CORS_ORIGINS.split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        *extra_cors_origins,
     ],
     allow_origin_regex=(
         r"^https?://(localhost|127\.0\.0\.1|"

@@ -47,7 +47,10 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        # Optional. Leave unset so the app auto-detects the API host at
+        # runtime; only set VITE_API_BASE_URL if the API lives on a
+        # different host/port than the frontend.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
 
     container_name: scanhive-frontend
     image: scanhive-frontend:local
