@@ -76,7 +76,7 @@ services:
       SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME to your domain, e.g. scanhive.pentestguy.in}
 
     volumes:
-      - ./deploy/edge/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/edge/templates:/etc/nginx/templates:ro
       - ./deploy/edge/certs:/etc/nginx/certs:ro
 
     ports:
