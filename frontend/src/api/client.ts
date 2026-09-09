@@ -2,8 +2,10 @@ import axios from "axios";
 
 import { tokenStorage } from "../auth/tokenStorage";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.protocol}//${window.location.hostname}:8000`;
+// Same-origin by default: nginx (see nginx.conf) proxies /api, /docs, etc.
+// to the backend container, so the browser never needs a separate port.
+// Only set VITE_API_BASE_URL if the API is genuinely on a different origin.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

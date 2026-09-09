@@ -99,6 +99,69 @@ Open `http://localhost:5173` after Vite starts. This runs alongside the Dockeriz
 docker compose down
 ```
 
+## Deploying to a VPS
+
+`docker-compose.prod.yml` runs the same three services behind an `edge` reverse proxy. Only `edge` publishes a port (80 and 443) — Postgres and the backend are reachable exclusively from other containers on the internal network, so there is nothing listening on `:8000` or `:5432` for the outside world to find. The frontend's own nginx (`frontend/nginx.conf`) proxies `/api`, `/docs`, `/health`, and `/openapi.json` to the backend container internally, so the browser only ever talks to one origin, over one port.
+
+### 1. DNS (Cloudflare)
+
+Create an **A record** for your domain (e.g. `scanhive.pentestguy.in`) pointing at the VPS's public IP, with the orange cloud (proxied) **on**.
+
+Then, in **SSL/TLS → Overview**, set the encryption mode to **Full (strict)**. This requires the origin server to present a valid certificate — that's what the next step is for.
+
+### 2. Origin certificate (Cloudflare)
+
+In **SSL/TLS → Origin Server**, click **Create Certificate** (defaults are fine — RSA, 15-year validity, covering your domain). Cloudflare gives you two blocks of text:
+
+```bash
+mkdir -p deploy/edge/certs
+# paste the "Origin Certificate" block into:
+deploy/edge/certs/origin.pem
+# paste the "Private Key" block into:
+deploy/edge/certs/origin-key.pem
+```
+
+These two files are gitignored — they never get committed, and only need to exist on the VPS.
+
+### 3. Configure and start the stack
+
+On the VPS:
+
+```bash
+git clone <your-repo-url> scanhive-dashboard
+cd scanhive-dashboard
+
+cp backend/.env.example backend/.env
+# edit backend/.env: FRONTEND_URL=https://scanhive.pentestguy.in, real SMTP settings, etc.
+# (see the "Configure the API" table above for what each variable does)
+
+SERVER_NAME=scanhive.pentestguy.in \
+  docker compose -p scanhive-prod -f docker-compose.prod.yml up -d --build
+```
+
+Using `-p scanhive-prod` gives this stack its own project name, so its containers/volumes/network never collide with a `docker-compose.yml` (dev) stack on the same machine.
+
+### 4. Verify
+
+```bash
+curl -I http://scanhive.pentestguy.in        # expect 301 -> https
+curl https://scanhive.pentestguy.in/health   # expect {"database":"Connected","status":"Healthy"}
+```
+
+Then open `https://scanhive.pentestguy.in` in a browser and register your organization.
+
+### 5. Firewall
+
+Only 22 (SSH), 80, and 443 need to be open on the VPS. Since Postgres and the backend no longer publish ports at all in this compose file, there's nothing else to block at the Docker level — but confirm your VPS provider's firewall / `ufw` doesn't have anything else open by default:
+
+```bash
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+sudo ufw status
+```
+
 ## SARIF ingestion
 
 Upload endpoints accept SARIF 2.x files and require a project plus one of the supported scan types:
@@ -116,7 +179,7 @@ Use Swagger UI at `http://localhost:8000/docs` to test authenticated scan upload
 
 - Replace all development secrets before deploying ScanHive.
 - Terminate TLS at the ingress and use HTTPS for the frontend and API.
-- Keep PostgreSQL on a private network and remove public port exposure in production.
+- Keep PostgreSQL on a private network and remove public port exposure in production — `docker-compose.prod.yml` (see "Deploying to a VPS") does this by default: nothing but the edge proxy's 80/443 is published.
 - Configure strict frontend origins instead of development CORS patterns.
 - Rotate signing keys, API keys, and service credentials according to organizational policy.
 - Invite links grant account creation for their target organization; treat them as sensitive and revoke unused invitations promptly.

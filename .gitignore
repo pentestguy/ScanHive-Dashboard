@@ -39,3 +39,9 @@ __pycache__/
 # Runtime SARIF uploads -- keep the directory, not its contents
 backend/app/uploads/*
 !backend/app/uploads/.gitkeep
+
+# TLS certificates for the production edge proxy -- never commit these
+deploy/edge/certs/*
+!deploy/edge/certs/.gitkeep
+*.pem
+*.key

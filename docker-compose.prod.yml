@@ -1,0 +1,90 @@
+# Production deployment (VPS + Cloudflare).
+#
+# Unlike docker-compose.yml, nothing here publishes a port directly except
+# the `edge` service (80 + 443). Postgres and the backend are reachable
+# only from other containers on the internal network -- there is no
+# ":8000" or ":5432" exposed to the internet at all.
+#
+# Usage:
+#   cp backend/.env.example backend/.env   # then edit it -- see README
+#   mkdir -p deploy/edge/certs
+#   # place Cloudflare Origin Certificate files there as origin.pem / origin-key.pem
+#   SERVER_NAME=scanhive.pentestguy.in \
+#     docker compose -p scanhive-prod -f docker-compose.prod.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: scanhive-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: opensec
+      POSTGRES_PASSWORD: opensec
+      POSTGRES_DB: opensec
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opensec -d opensec"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: scanhive-backend
+    image: scanhive-backend:local
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - ./backend/.env
+
+    volumes:
+      - backend_data:/data
+
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+
+    container_name: scanhive-frontend
+    image: scanhive-frontend:local
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+  edge:
+    image: nginx:1.27-alpine
+    container_name: scanhive-edge
+
+    depends_on:
+      - frontend
+
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME to your domain, e.g. scanhive.pentestguy.in}
+
+    volumes:
+      - ./deploy/edge/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/edge/certs:/etc/nginx/certs:ro
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  backend_data:
