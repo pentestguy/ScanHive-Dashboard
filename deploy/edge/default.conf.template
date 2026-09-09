@@ -24,6 +24,8 @@ server {
     ssl_certificate     /etc/nginx/certs/origin.pem;
     ssl_certificate_key /etc/nginx/certs/origin-key.pem;
 
+    client_max_body_size 50m;
+
     location / {
         proxy_pass http://frontend:80;
         proxy_set_header Host $host;
